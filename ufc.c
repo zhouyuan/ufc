@@ -29,7 +29,7 @@ static int open_cachedev(ufc_t* ufc)
     
     const char* dev = ufc->path;
     //int mode = O_CREAT | O_RDWR, permission = S_IRUSR | S_IWUSR;
-    int mode = O_RDWR;
+    int mode = O_RDWR | O_DSYNC;
     //int fd = open(dev, mode, permission);
     int fd = open(dev, mode);
     if (fd < 0)
@@ -79,14 +79,14 @@ int ufc_open(const char* path, const ufc_options_t* options, ufc_t** tufc)
     return ret;
 }
 
-int get_target_set(ufc_t* ufc, int lba)
+int get_target_set(ufc_t* ufc, uint64_t lba)
 {
     int set_id = (lba / ufc->options->block_size / ufc->options->set_size) % ufc->options->num_sets;
     return set_id;
 
 }
 
-int get_inset_offset(ufc_t* ufc, int lba)
+int get_inset_offset(ufc_t* ufc, uint64_t lba)
 {
 
     int offs = lba % (ufc->options->block_size * ufc->options->set_size);
@@ -107,7 +107,7 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
 
     int t_offset = -1;
     int i;
-    for(i = 0; i < ufc->options->set_size ; i++) {
+    for (i = 0; i < ufc->options->set_size ; i++) {
         if (lba == ufc->smeta[set_id]->emeta[i]->lba) {
             // find it -> re-dirty
             t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->options->block_size * i;
@@ -129,7 +129,13 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
 
     ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits]->lba = lba;
     ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits]->entry_size = loglen;
-    ufc->smeta[set_id]->free_bits += 1;
+
+    if (ufc->smeta[set_id]->free_bits == (ufc->options->set_size - 2)) {
+        //TODO rewind: flush+evict
+        ufc->smeta[set_id]->free_bits = 0;
+    } else {
+        ufc->smeta[set_id]->free_bits += 1;
+    }
   
 }
 
@@ -152,14 +158,12 @@ int ufc_read(ufc_t* ufc, char* data, size_t loglen, uint64_t lba)
 
     }
 
-    printf("set_id = %d, t_offset=%d\n", set_id, t_offset);
     lseek(ufc->fd, t_offset, SEEK_SET);
     size_t read_len = read(ufc->fd, p, loglen);
     if (read_len != loglen) {
         printf("error when read\n");
         return -1;
     }
-
 
 }
 

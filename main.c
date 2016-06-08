@@ -13,6 +13,7 @@ int main()
         ufc_write(wal, tmp, len, i*4096);
         //ufc_sync(wal);
     }
+    //ufc_sync(wal);
     ufc_close(wal);
     ufc_options_destroy(options);
     return 0;

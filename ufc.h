@@ -29,7 +29,7 @@ typedef struct ufc_options_t
 typedef struct ufc_entry_meta_t {
     int entry_id;
     int inset_offset;
-    int lba;
+    uint64_t lba;
     int dirty;
     int entry_size;
 } ufc_entry_meta_t;
