@@ -120,7 +120,7 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
 
     }
 
-    printf("set_id = %d, t_offset=%d\n", set_id, t_offset);
+    //printf("set_id = %d, t_offset=%d\n", set_id, t_offset);
     lseek(ufc->fd, t_offset, SEEK_SET);
     int err = write(ufc->fd, p, loglen);
     if (err < 0) {
