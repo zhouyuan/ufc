@@ -13,6 +13,7 @@ ufc_options_t* ufc_options_create()
     options->num_sets = options->max_file_size / (options->block_size * options->set_size);
     return options;
 }
+
 void ufc_options_destroy(ufc_options_t* options)
 {
     if (NULL != options)
