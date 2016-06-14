@@ -47,7 +47,7 @@ extern "C"
       int fd;
       const char* path;
       int data_pos;
-      ufc_options_t* options;
+      const ufc_options_t* options;
       ufc_set_meta_t* smeta[512];
   } ufc_t;
   

@@ -33,7 +33,7 @@ int main()
 {
     ufc_options_t* options = ufc_options_create();
     ufc_t* ufc = NULL;
-    int ret = ufc_open("/dev/loop2", options, &ufc);
+    int ret = ufc_open("/dev/sdb", options, &ufc);
     int i;
     for(i = 0; i < 1024*4096; i++)
     {

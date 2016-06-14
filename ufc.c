@@ -29,9 +29,7 @@ static int open_cachedev(ufc_t* ufc)
     }
     
     const char* dev = ufc->path;
-    //int mode = O_CREAT | O_RDWR, permission = S_IRUSR | S_IWUSR;
     int mode = O_RDWR | O_DSYNC;
-    //int fd = open(dev, mode, permission);
     int fd = open(dev, mode);
     if (fd < 0)
     {
@@ -43,7 +41,6 @@ static int open_cachedev(ufc_t* ufc)
     lseek(fd, ufc->data_pos, SEEK_SET);
     ufc->fd = fd;
     return 0;
-
 }
 
 
@@ -137,6 +134,8 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
     } else {
         ufc->smeta[set_id]->free_bits += 1;
     }
+
+    return 0;
   
 }
 
@@ -166,11 +165,12 @@ int ufc_read(ufc_t* ufc, char* data, size_t loglen, uint64_t lba)
         return -1;
     }
 
+    return 0;
 }
 
 int ufc_sync(ufc_t* ufc) 
 {
-    fdatasync(ufc->fd);
+    return fdatasync(ufc->fd);
 }
 
 int ufc_close(ufc_t* ufc)
@@ -197,4 +197,5 @@ int ufc_close(ufc_t* ufc)
     }
     
     free (ufc);
+    return 0;
 }
