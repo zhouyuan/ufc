@@ -40,7 +40,7 @@ extern "C"
   
   typedef struct ufc_set_meta_t {
       ufc_entry_meta_t *emeta[512];
-      int free_bits;
+      int free_bits[512];
   } ufc_set_meta_t;
   
   typedef struct ufc_t {
