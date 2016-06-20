@@ -1,2 +1,2 @@
 all:
-	gcc ufc.c test.c -o test
+	gcc -g ufc.c test.c -o test

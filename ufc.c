@@ -1,11 +1,13 @@
 #include "ufc.h"
 
+uint64_t UFC_DEFAULT_SIZE = 1 * 1024 * 1024 * 1024LL;
+
 ufc_options_t* ufc_options_create()
 {
     ufc_options_t* options = (ufc_options_t*) malloc(sizeof(ufc_options_t));
     memset(options, 0, sizeof(ufc_options_t));
     options->create_ifnotexist = 1;
-    options->max_file_size = 1 * 1024 * 1024 * 1024LL;  //default 1G
+    options->max_file_size = UFC_DEFAULT_SIZE;  //default 1G
     options->user_meta_size = 0;
     options->ring_cache_size = 0;
     options->block_size = 4096;
@@ -57,10 +59,13 @@ int ufc_open(const char* path, const ufc_options_t* options, ufc_t** tufc)
     ufc->options = options;
 
     ufc->data_pos = 0; //TODO
+    ufc->smeta = (ufc_set_meta_t**) malloc(ufc->options->num_sets *sizeof(ufc_set_meta_t));
     
     int i, j;
     for (i = 0; i < ufc->options->num_sets ; i++) {
         ufc_set_meta_t* ufc_set_meta = (ufc_set_meta_t*) malloc(sizeof(ufc_set_meta_t));
+        ufc_set_meta->emeta = (ufc_entry_meta_t**) malloc(ufc->options->set_size * sizeof(ufc_entry_meta_t));
+        ufc_set_meta->free_bits = (uint8_t*) malloc(ufc->options->set_size * sizeof(uint8_t));
         for (j = 0; j < ufc->options->set_size ; j++) {
             ufc_entry_meta_t* ufc_entry_meta = (ufc_entry_meta_t*) malloc(sizeof(ufc_entry_meta_t));
             ufc_entry_meta->lba = -1;
@@ -242,6 +247,8 @@ int ufc_close(ufc_t* ufc)
             for (; j < ufc->options->set_size; j++) {
                 free(ufc->smeta[i]->emeta[j]);
             }
+            free(ufc->smeta[i]->free_bits);
+            free(ufc->smeta[i]->emeta);
             free(ufc->smeta[i]);
         }
     }

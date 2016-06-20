@@ -22,13 +22,13 @@ extern "C"
   typedef struct ufc_options_t
   {
           int create_ifnotexist;
-          size_t max_file_size;
+          uint64_t max_file_size;
           size_t user_meta_size;
           size_t ring_cache_size;
           const char* log_prefix;
           int block_size;
           int set_size;
-          int num_sets;
+          uint64_t num_sets;
   } ufc_options_t;
   
   typedef struct ufc_entry_meta_t {
@@ -40,8 +40,8 @@ extern "C"
   } ufc_entry_meta_t;
   
   typedef struct ufc_set_meta_t {
-      ufc_entry_meta_t *emeta[512];
-      int free_bits[512];
+      ufc_entry_meta_t **emeta;
+      uint8_t* free_bits;
       pthread_mutex_t mutex;
   } ufc_set_meta_t;
   
@@ -50,7 +50,7 @@ extern "C"
       const char* path;
       int data_pos;
       const ufc_options_t* options;
-      ufc_set_meta_t* smeta[512];
+      ufc_set_meta_t** smeta;
   } ufc_t;
   
   ufc_options_t* ufc_options_create();
@@ -68,7 +68,6 @@ extern "C"
   int ufc_meta_write(ufc_t* ufc, const int key, const int addr);
   int ufc_sync_meta(ufc_t* ufc);
   */
-  
   
   int ufc_close(ufc_t* ufc);
 #if defined(__cplusplus)
