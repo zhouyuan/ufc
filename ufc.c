@@ -91,7 +91,7 @@ int get_inset_offset(ufc_t* ufc, uint64_t lba)
     return offs;
 }
 
-int ufc_lookup(ufc_t* ufc, int64_t lba)
+int ufc_lookup(ufc_t* ufc, uint64_t lba)
 {
 
     int set_id = get_target_set(ufc, lba);
@@ -108,6 +108,32 @@ int ufc_lookup(ufc_t* ufc, int64_t lba)
     return t_offset;
 }
 
+int ufc_alloc(ufc_t* ufc, uint64_t lba, int* free_slot)
+{
+
+    int set_id = get_target_set(ufc, lba);
+    int t_offset = -1;
+    int i = 0;
+    for (i = 0; i < ufc->options->set_size; i++) {
+        if (ufc->smeta[set_id]->free_bits[i] == 0) {
+            t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->smeta[set_id]->free_bits[i] * ufc->options->block_size;
+        }
+    }
+
+    *free_slot = i;
+    return t_offset;
+
+/*
+    if (-1 == t_offset) {
+        //TODO ufc_remove_set();
+        for (i = 0; i < ufc->options->set_size; i++ ) {
+            ufc->smeta[set_id]->free_bits[i] = 0;
+        }
+    }
+*/
+
+}
+
 int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
 {
     if (NULL == ufc) {
@@ -119,27 +145,20 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
 
     int t_offset = ufc_lookup(ufc, lba);
 
-    if (-1 == t_offset) {
-        for (i = 0; i < ufc->options->set_size; i++) {
-            if (ufc->smeta[set_id]->free_bits[i] == 0) {
-                t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->smeta[set_id]->free_bits[i] * ufc->options->block_size;
-            }
-        }
-
-    }
+    int free_slot = -1;
 
     if (-1 == t_offset) {
-        //TODO ufc_remove_set();
-        for (i=0; i<ufc->options->set_size; i++ ) {
-            ufc->smeta[set_id]->free_bits[i] = 0;
-        }
+
+        t_offset = ufc_alloc(ufc, lba, &free_slot);
     }
 
-    for (i =0; i < ufc->options->set_size; i++) {
-        if (ufc->smeta[set_id]->free_bits[i] == 0) {
-            t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->smeta[set_id]->free_bits[i] * ufc->options->block_size;
-        }
+    if ((-1 == t_offset) || (-1 == free_slot) ) {
+
+        //no free space
+        return -1;
     }
+
+    int set_id = get_target_set(ufc, lba);
 
     //printf("set_id = %d, t_offset=%d\n", set_id, t_offset);
     lseek(ufc->fd, t_offset, SEEK_SET);
@@ -149,8 +168,8 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
         return err;
     }
 
-    ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits[i]]->lba = lba;
-    ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits[i]]->entry_size = loglen;
+    ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits[free_slot]]->lba = lba;
+    ufc->smeta[set_id]->emeta[ufc->smeta[set_id]->free_bits[free_slot]]->entry_size = loglen;
 
     return 0;
   
@@ -161,7 +180,7 @@ int ufc_read(ufc_t* ufc, char* data, size_t loglen, uint64_t lba)
     int set_id = get_target_set(ufc, lba);
 
     void* p = (void*) data;
-    int t_offset = ufc_lookup(ufc, lba)
+    int t_offset = ufc_lookup(ufc, lba);
 
     if (-1 == t_offset) {
         return 0;
