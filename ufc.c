@@ -102,6 +102,7 @@ int ufc_lookup(ufc_t* ufc, uint64_t lba)
         if (lba == ufc->smeta[set_id]->emeta[i]->lba) {
             // hit
             t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->options->block_size * i;
+            break;
         }
     }
 
@@ -114,13 +115,15 @@ int ufc_alloc(ufc_t* ufc, uint64_t lba, int* free_slot)
     int set_id = get_target_set(ufc, lba);
     int t_offset = -1;
     int i = 0;
+    pthread_mutex_lock(&(ufc->smeta[set_id]->mutex));
     for (i = 0; i < ufc->options->set_size; i++) {
         if (ufc->smeta[set_id]->free_bits[i] == 0) {
             t_offset = set_id * (ufc->options->block_size * ufc->options->set_size) + ufc->smeta[set_id]->free_bits[i] * ufc->options->block_size;
+            *free_slot = i;
+            break;
         }
     }
-
-    *free_slot = i;
+    pthread_mutex_unlock(&(ufc->smeta[set_id]->mutex));
     return t_offset;
 
 /*
@@ -200,14 +203,17 @@ int ufc_remove(ufc_t* ufc, uint64_t lba)
 {
     int set_id = get_target_set(ufc, lba);
     int i;
+    pthread_mutex_lock(&(ufc->smeta[set_id]->mutex));
     for(i = 0; i < ufc->options->set_size ; i++) {
         if (lba == ufc->smeta[set_id]->emeta[i]->lba) {
             // read hit
             ufc->smeta[set_id]->emeta[i]->lba = -1;
             ufc->smeta[set_id]->free_bits[i] = 0;
+            break;
         }
     }
 
+    pthread_mutex_unlock(&(ufc->smeta[set_id]->mutex));
     return 0;
 
 }

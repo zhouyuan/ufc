@@ -40,6 +40,9 @@ int main()
         const char* tmp = getString();;
         int len = 4096;
         ufc_write(ufc, tmp, len, i*4096);
+        if ( i % 4444 ) {
+            ufc_remove(ufc, i*4096);
+        }
         //ufc_sync(ufc);
     }
     //ufc_sync(ufc);

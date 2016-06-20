@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #if defined(__cplusplus)
 extern "C"
@@ -41,6 +42,7 @@ extern "C"
   typedef struct ufc_set_meta_t {
       ufc_entry_meta_t *emeta[512];
       int free_bits[512];
+      pthread_mutex_t mutex;
   } ufc_set_meta_t;
   
   typedef struct ufc_t {
