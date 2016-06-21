@@ -1,13 +1,13 @@
 #include "ufc.h"
 
-uint64_t UFC_DEFAULT_SIZE = 1 * 1024 * 1024 * 1024LL;
+const uint64_t UFC_DEFAULT_SIZE = 5 * 1024 * 1024 * 1024LL;
 
 ufc_options_t* ufc_options_create()
 {
     ufc_options_t* options = (ufc_options_t*) malloc(sizeof(ufc_options_t));
     memset(options, 0, sizeof(ufc_options_t));
     options->create_ifnotexist = 1;
-    options->max_file_size = UFC_DEFAULT_SIZE;  //default 1G
+    options->max_file_size = UFC_DEFAULT_SIZE;
     options->user_meta_size = 0;
     options->ring_cache_size = 0;
     options->block_size = 4096;
@@ -45,7 +45,6 @@ static int open_cachedev(ufc_t* ufc)
     return 0;
 }
 
-
 int ufc_open(const char* path, const ufc_options_t* options, ufc_t** tufc)
 {
 
@@ -58,7 +57,7 @@ int ufc_open(const char* path, const ufc_options_t* options, ufc_t** tufc)
     ufc->path = path;
     ufc->options = options;
 
-    ufc->data_pos = 0; //TODO
+    ufc->data_pos = 0; //TODO allow to store ondisk metadata
     ufc->smeta = (ufc_set_meta_t**) malloc(ufc->options->num_sets *sizeof(ufc_set_meta_t));
     
     int i, j;
@@ -169,8 +168,10 @@ int ufc_write(ufc_t* ufc, const void* log, size_t loglen, uint64_t lba)
     int set_id = get_target_set(ufc, lba);
 
     //printf("set_id = %d, t_offset=%d\n", set_id, t_offset);
+    pthread_mutex_lock(&(ufc->mutex));
     lseek(ufc->fd, t_offset, SEEK_SET);
     int err = write(ufc->fd, p, loglen);
+    pthread_mutex_unlock(&(ufc->mutex));
     if (err < 0) {
         printf("error when write\n");
         return err;
@@ -194,8 +195,11 @@ int ufc_read(ufc_t* ufc, char* data, size_t loglen, uint64_t lba)
         return 0;
     }
 
+    pthread_mutex_lock(&(ufc->mutex));
     lseek(ufc->fd, t_offset, SEEK_SET);
     size_t read_len = read(ufc->fd, p, loglen);
+    pthread_mutex_unlock(&(ufc->mutex));
+
     if (read_len != loglen) {
         printf("error when read\n");
         return -1;
@@ -208,6 +212,7 @@ int ufc_remove(ufc_t* ufc, uint64_t lba)
 {
     int set_id = get_target_set(ufc, lba);
     int i;
+
     pthread_mutex_lock(&(ufc->smeta[set_id]->mutex));
     for(i = 0; i < ufc->options->set_size ; i++) {
         if (lba == ufc->smeta[set_id]->emeta[i]->lba) {

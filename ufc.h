@@ -32,10 +32,12 @@ extern "C"
   } ufc_options_t;
   
   typedef struct ufc_entry_meta_t {
+/*
       int entry_id;
       int inset_offset;
-      uint64_t lba;
       int dirty;
+*/
+      uint64_t lba;
       int entry_size;
   } ufc_entry_meta_t;
   
@@ -51,6 +53,7 @@ extern "C"
       int data_pos;
       const ufc_options_t* options;
       ufc_set_meta_t** smeta;
+      pthread_mutex_t mutex;
   } ufc_t;
   
   ufc_options_t* ufc_options_create();
