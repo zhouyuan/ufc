@@ -43,9 +43,7 @@ int main()
         if ( i % 4444 ) {
             ufc_remove(ufc, i*4096);
         }
-        //ufc_sync(ufc);
     }
-    //ufc_sync(ufc);
     ufc_close(ufc);
     ufc_options_destroy(options);
     return 0;
